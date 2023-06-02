@@ -164,7 +164,11 @@ mem_init(void)
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
 	// LAB 3: Your code here.
-
+	size_t envs_size = NENV * sizeof(struct Env);
+	envs = (struct Env*) boot_alloc(envs_size);
+	assert(envs != NULL);
+	memset(envs, 0, envs_size);
+	
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
 	// up the list of free physical pages. Once we've done so, all further
@@ -173,6 +177,7 @@ mem_init(void)
 	// or page_insert
 	
 	page_init();
+
 	
 	check_page_free_list(1);
 	check_page_alloc();
@@ -196,7 +201,7 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
-
+	boot_map_region(kern_pgdir, UENVS, PTSIZE, PADDR(envs), PTE_U);
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -393,6 +398,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
 	pde_t dir_item = pgdir[PDX(va)];
+
 	if( dir_item == 0 && create == false) return NULL;
 	
 	if( dir_item == 0 ){
@@ -404,7 +410,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 
 		pgdir[PDX(va)] = ps;
 	}
-	
+
 	return (pte_t *) KADDR(PTE_ADDR(pgdir[PDX(va)])) + PTX(va);
 }
 
@@ -422,10 +428,14 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
+	
 	// Fill this function in
+
 	for(size_t i = 0; i < size/PGSIZE; i++){
+
 		pte_t *item = pgdir_walk(pgdir, (uint32_t *)va, 1);
-		
+		assert(item != NULL);
+
 		if(*item != 0)
 			panic("map page already in use");
 		
@@ -472,7 +482,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 		tlb_invalidate(pgdir, va);
 		page_remove(pgdir, va);
 	}
-	*item = page2pa(pp) | perm | PTE_P;
+	*item = page2pa(pp) | perm | PTE_P ;
 	pgdir[PDX(va)] |= perm;
 	return 0;
 }

@@ -22,7 +22,7 @@ static struct Trapframe *last_tf;
  */
 struct Gatedesc idt[256] = { { 0 } };
 struct Pseudodesc idt_pd = {
-	sizeof(idt) - 1, (uint32_t) idt
+	sizeof(idt) - 0, (uint32_t) idt
 };
 
 
@@ -58,6 +58,24 @@ static const char *trapname(int trapno)
 	return "(unknown trap)";
 }
 
+void divide_fault();
+void debug_fault();
+void nmi_itr();
+void breakpoint_trap();
+void overflow_trap();
+void bound_fault();
+void invalid_fault();
+void dna_fault();
+void double_fault_abort();
+void invalid_tss_fault();
+void seg_not_present_fault();
+void segment_fault();
+void general_protection_fault();
+void page_fault();
+void fpu_fault();
+void align_check_fault();
+void machine_check_abort();
+void simd_fp_fault();
 
 void
 trap_init(void)
@@ -65,6 +83,24 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
+	SETGATE(idt[T_DIVIDE], 0, GD_KT, (uint32_t)divide_fault, 0)
+	SETGATE(idt[T_DEBUG], 0, GD_KT, (uint32_t)debug_fault, 0)
+	SETGATE(idt[T_NMI], 0, GD_KT, (uint32_t)nmi_itr, 0)
+	SETGATE(idt[T_BRKPT], 0, GD_KT, (uint32_t)breakpoint_trap, 3)
+	SETGATE(idt[T_OFLOW], 0, GD_KT, (uint32_t)overflow_trap, 0)
+	SETGATE(idt[T_BOUND], 0, GD_KT, (uint32_t)bound_fault, 0)
+	SETGATE(idt[T_ILLOP], 0, GD_KT, (uint32_t)invalid_fault, 0)
+	SETGATE(idt[T_DEVICE], 0, GD_KT, (uint32_t)dna_fault, 0)
+	SETGATE(idt[T_DBLFLT], 0, GD_KT, (uint32_t)double_fault_abort, 0)
+	SETGATE(idt[T_TSS], 0, GD_KT, (uint32_t)invalid_tss_fault, 0)
+	SETGATE(idt[T_SEGNP], 0, GD_KT, (uint32_t)seg_not_present_fault, 0)
+	SETGATE(idt[T_STACK], 0, GD_KT, (uint32_t)segment_fault, 0)
+	SETGATE(idt[T_GPFLT], 0, GD_KT, (uint32_t)general_protection_fault, 0)
+	SETGATE(idt[T_PGFLT], 0, GD_KT, (uint32_t)page_fault, 0)
+	SETGATE(idt[T_FPERR], 0, GD_KT, (uint32_t)fpu_fault, 0)
+	SETGATE(idt[T_ALIGN], 0, GD_KT, (uint32_t)align_check_fault, 0)
+	SETGATE(idt[T_MCHK], 0, GD_KT, (uint32_t)machine_check_abort, 0)
+	SETGATE(idt[T_SIMDERR], 0, GD_KT, (uint32_t)simd_fp_fault, 0)
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -82,7 +118,7 @@ trap_init_percpu(void)
 
 	// Initialize the TSS slot of the gdt.
 	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t) (&ts),
-					sizeof(struct Taskstate) - 1, 0);
+					sizeof(struct Taskstate) - 0, 0);
 	gdt[GD_TSS0 >> 3].sd_s = 0;
 
 	// Load the TSS selector (like other segment selectors, the
@@ -114,7 +150,7 @@ print_trapframe(struct Trapframe *tf)
 		cprintf(" [%s, %s, %s]\n",
 			tf->tf_err & 4 ? "user" : "kernel",
 			tf->tf_err & 2 ? "write" : "read",
-			tf->tf_err & 1 ? "protection" : "not-present");
+			tf->tf_err & 0 ? "protection" : "not-present");
 	else
 		cprintf("\n");
 	cprintf("  eip  0x%08x\n", tf->tf_eip);
@@ -145,6 +181,10 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
 
+	if(tf->tf_trapno == T_PGFLT) {
+		page_fault_handler(tf);
+		return;
+	}
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT)

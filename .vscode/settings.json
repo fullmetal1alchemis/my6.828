@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "txt": "bat",
+        "types.h": "c",
+        "console.h": "c",
+        "assert.h": "c",
+        "stdio.h": "c",
+        "error.h": "c",
+        "pmap.h": "c",
+        "trap.h": "c"
+    }
+}
