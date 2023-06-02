@@ -48,9 +48,39 @@
  * Lab 3: Your code here for generating entry points for the different traps.
  */
 
-
+TRAPHANDLER_NOEC(divide_fault, T_DIVIDE)
+TRAPHANDLER_NOEC(debug_fault, T_DEBUG)
+TRAPHANDLER_NOEC(nmi_itr, T_NMI)
+TRAPHANDLER_NOEC(breakpoint_trap, T_BRKPT)
+TRAPHANDLER_NOEC(overflow_trap, T_OFLOW)
+TRAPHANDLER_NOEC(bound_fault, T_BOUND)
+TRAPHANDLER_NOEC(invalid_fault, T_ILLOP)
+TRAPHANDLER_NOEC(dna_fault, T_DEVICE)
+TRAPHANDLER(double_fault_abort, T_DBLFLT)
+//TRAPHANDLER_NOEC(cso_abort, 9)
+TRAPHANDLER(invalid_tss_fault, T_TSS)
+TRAPHANDLER(seg_not_present_fault, T_SEGNP)
+TRAPHANDLER(segment_fault, T_STACK)
+TRAPHANDLER(general_protection_fault, T_GPFLT)
+TRAPHANDLER(page_fault, T_PGFLT)
+TRAPHANDLER_NOEC(fpu_fault, T_FPERR)
+TRAPHANDLER(align_check_fault, T_ALIGN)
+TRAPHANDLER_NOEC(machine_check_abort, T_MCHK)
+TRAPHANDLER_NOEC(simd_fp_fault, T_SIMDERR)
 
 /*
  * Lab 3: Your code here for _alltraps
  */
+
+_alltraps:
+	pushl %ds;
+	pushl %es;
+	pushal;
+	
+	movw $GD_KD, %ax;
+	mov %ax, %ds;
+	mov %ax, %es;
+
+	pushl %esp;
+	call trap;
 
